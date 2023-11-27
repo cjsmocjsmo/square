@@ -1,12 +1,28 @@
 use image::GenericImageView;
 use std::fs;
+use std::sync::mpsc::channel;
+use threadpool::ThreadPool;
 
 pub mod walk_dirs;
 
 fn main() {
     let image_list = walk_dirs::walk_dir("/media/pipi/USB01/DeDuped1_backup".to_string());
-    for img in image_list {
-        let _aspect_ratio = filter_by_aspect_ratio(img);
+    // for img in image_list {
+    //     let _aspect_ratio = filter_by_aspect_ratio(img);
+    // }
+    let pool = ThreadPool::new(num_cpus::get());
+    let (tx, rx) = channel();
+    for img in image_list.clone() {
+        let tx = tx.clone();
+        pool.execute(move || {
+            let _aspect_ratio = filter_by_aspect_ratio(img);
+            tx.send(()).unwrap();
+        });
+    }
+    drop(tx);
+    for t in rx.iter() {
+        let _info = t;
+        // println!("info: {:?}", info)
     }
 }
 
